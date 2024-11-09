@@ -29,7 +29,14 @@ jobs:
           node-version: "lts/*"
           cache: npm
 
+      - name: Install Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"      
+
       - name: Install dependencies
+        env:
+          PYTHON: /usr/local/bin/python3.9
         run: npm install
 
       - name: Clean previous builds
