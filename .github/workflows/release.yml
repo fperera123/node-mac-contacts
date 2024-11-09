@@ -44,6 +44,7 @@ jobs:
 
       - name: Build for x64
         run: |
+          mkdir -p ./build/node-mac-contacts
           npm run build --arch=x64
           mv ./build/Release/contacts.node ./build/node-mac-contacts/contacts-x64.node
 
