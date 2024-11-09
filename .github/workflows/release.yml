@@ -62,6 +62,9 @@ jobs:
       - name: Prepare release files
         run: |
           mkdir -p dist/build/Release
+          cp README.md dist/
+          cp LICENSE dist/
+          cp package.json dist/
           cp index.js dist/
           cp contacts.mm dist/
           cp ./build/node-mac-contacts/contacts-x64.node dist/build/Release/
