@@ -1,0 +1,84 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release:
+    name: 🚀 Release
+    runs-on: macos-13
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "lts/*"
+          cache: npm
+
+      - name: Install Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"      
+
+      - name: Install dependencies
+        env:
+          PYTHON: /usr/local/bin/python3.9
+        run: npm install
+
+      - name: Clean previous builds
+        run: npm run clean
+
+      - name: Build for x64
+        run: |
+          mkdir -p ./build/node-mac-contacts
+          npm run build --arch=x64
+          mv ./build/Release/contacts.node ./build/node-mac-contacts/contacts-x64.node
+
+      - name: Build for arm64
+        run: |
+          npm run build --arch=arm64
+          mv ./build/Release/contacts.node ./build/node-mac-contacts/contacts-arm64.node
+
+      - name: Create universal binary
+        run: |
+          lipo -create -output ./build/node-mac-contacts/contacts.node \
+          ./build/node-mac-contacts/contacts-x64.node \
+          ./build/node-mac-contacts/contacts-arm64.node
+
+      - name: Prepare release files
+        run: |
+          mkdir -p dist/build/Release
+          cp index.js dist/
+          cp contacts.mm dist/
+          cp ./build/node-mac-contacts/contacts-x64.node dist/build/Release/
+          cp ./build/node-mac-contacts/contacts-arm64.node dist/build/Release/
+          cp ./build/node-mac-contacts/contacts.node dist/build/Release/
+
+      - name: Create tar.gz archive
+        run: tar -czvf node-mac-contacts-${{ github.ref_name }}.tar.gz -C dist .
+
+      - name: Create zip archive
+        run: zip -r node-mac-contacts-${{ github.ref_name }}.zip dist
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            node-mac-contacts-${{ github.ref_name }}.tar.gz
+            node-mac-contacts-${{ github.ref_name }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
